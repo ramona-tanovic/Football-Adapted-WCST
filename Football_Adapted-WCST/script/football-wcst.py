@@ -47,9 +47,9 @@ class FootballWCSTExperiment:
         }
 
         # Options for dropdown fields
-        age_options = [str(x) for x in range(10, 31)]  # Ages 10 to 30
+        age_options = [str(x) for x in range(10, 100)]  # Ages 10 to 30
         gender_options = ['Male', 'Female', 'Other']  # Gender options
-        football_years_options = [str(x) for x in range(1, 31)]  # 1 to 30 years
+        football_years_options = [str(x) for x in range(0, 100)]  # 1 to 30 years
 
         # Create a custom dialog box for participant details
         dlg = gui.Dlg(title="Participant Details and Consent")
@@ -101,7 +101,7 @@ class FootballWCSTExperiment:
                 'main': os.path.join(scenario_path, f"{scenario_folder}.png"),  # e.g., a1.png
                 'selfish': os.path.join(scenario_path, f"{scenario_folder}_s.png"),  # e.g., a1_s.png
                 'team': os.path.join(scenario_path, f"{scenario_folder}_t.png"),  # e.g., a1_t.png
-                'hold': os.path.join(scenario_path, f"{scenario_folder}_h.png"),  # e.g., a1_h.png
+                'hold the possession': os.path.join(scenario_path, f"{scenario_folder}_h.png"),  # e.g., a1_h.png
             }
 
         # Create a list of all scenarios for the experiment
@@ -142,20 +142,16 @@ class FootballWCSTExperiment:
         # Create a fullscreen window for the experiment
         win = visual.Window(size=(1920, 1080), color=(0, 0, 0), fullscr=True, units='pix')
 
-        # Instructions screen
+        # Instructions screen #make less obvious, copy from wcst
         instructions = visual.TextStim(win, name='instructions',
-            text="Overview:\n"
-            "In this task, you will see a card on the screen and several options to choose from. Your goal is to figure out the correct option based on an unseen rule.\n\n"
-            "How to Play:\n"
-            "Look at the scenario displayed on the screen. Choose the option that matches the rule you think is being used. After making your choice, you will receive feedback to let you know if you were correct or incorrect.\n\n"
-            "Figuring Out the Rule:\n"
-            "The rule might be based on SELFISH PLAY, TEAM-PLAYER PLAY, or HOLD THE POSSESION. The rule can change during the task. Pay attention to feedback to adapt to new rules.\n\n"
-            "Stay Focused:\n"
-            "If you notice your answers are wrong repeatedly, try changing your approach. Don’t stick to an old rule—use the feedback to adjust.\n\n"
-            "Timing:\n"
-            "Take your time to think about your choice, but don't overthink it. There’s no penalty for mistakes—this is about learning and adapting.\n\n"
-            "Enjoy the Process:\n"
-            "There are no right or wrong ways to figure things out—just do your best. The task is designed to be challenging, so don’t worry if it feels tricky.\n\n"
+            text="Football-Adapted Wisconsin Card sorting Teat\n\n"
+            "In this task, you need to match a scenario to one of the three rules.\n"
+            "Click one of the scenarios that you think matches the rule.\n"
+            "Follow your selection, you will get feedback.\n"
+            "If your match was not correct, you need to try different rule.\n\n"
+            "The rules are: SELFISH PLAY, TEAM-PLAYER PLAY, HOLD THE POSSESION.\n\n"
+            "Once you figure out what rule to use, you can relax for a while. But, that is not all.\n"
+            "The matching rule changes now and then! If the computer gives you error feedback, you need to change the rule.\n\n"
             "Press 'space' to continue! :)",
             color=(-1, -1, -1), height=30, wrapWidth=1200
         )
@@ -214,13 +210,16 @@ class FootballWCSTExperiment:
 
                     # Display scenario and options
                     main_image = visual.ImageStim(win, image=scenario['main'], pos=(0, 200), size=(800, 400))
+                    main_image.draw()
+                    win.flip()
+                    core.wait(1.5)
                     option_images = {
                         'selfish': visual.ImageStim(win, image=scenario['selfish'], pos=(-400, -200), size=(300, 200)),
                         'team-player': visual.ImageStim(win, image=scenario['team'], pos=(0, -200), size=(300, 200)),
-                        'hold': visual.ImageStim(win, image=scenario['hold'], pos=(400, -200), size=(300, 200))
+                        'hold the possession': visual.ImageStim(win, image=scenario['hold the possession'], pos=(400, -200), size=(300, 200))
                     }
                     
-                    # Randomize the positions of the response images
+                    # Randomize the positions of the response images #Show them a second later
                     options = list(option_images.items())  # Create a list of (rule, image) tuples
                     random.shuffle(options)  # Shuffle the list randomly
 
