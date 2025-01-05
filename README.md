@@ -20,7 +20,6 @@ pip install psychopy
 football-wcst/
 │
 ├── main.py                 # Main experiment script
-├── requirements.txt        # Dependencies
 │
 ├── scenarios/             # Stimulus images
 │   ├── attacker/         # Attacker-specific scenarios
@@ -50,49 +49,3 @@ The experiment generates CSV files with the following columns:
 - Error classification
 - Scenario tracking
 - Feedback history
-
-## Example Data Analysis
-```python
-import pandas as pd
-
-# Load experiment data
-data = pd.read_csv('results/Football-Adapted_WCST_P001_2024-01-01.csv')
-
-# Calculate basic metrics
-accuracy = data['Correct'].mean()
-perseverative_errors = data['Perseverative_Error'].sum()
-mean_rt = data['Reaction_Time'].mean()
-```
-
-## Contributing
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/enhancement`)
-3. Commit changes (`git commit -am 'Add enhancement'`)
-4. Push to branch (`git push origin feature/enhancement`)
-5. Open a Pull Request
-
-## Citation
-If you use this implementation in your research, please cite:
-```bibtex
-@misc{football_wcst_2024,
-  author = {[Author Name]},
-  title = {Football-Adapted Wisconsin Card Sorting Test},
-  year = {2024},
-  publisher = {GitHub},
-  url = {https://github.com/[username]/football-wcst}
-}
-```
-
-## License
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Acknowledgments
-- PsychoPy development team
-- Wisconsin Card Sorting Test original authors
-- [Your Institution Name]
-
-## Contact
-For questions or support, please open an issue or contact [your.email@institution.edu]
-
----
-*Note: This experiment is part of ongoing research in sports cognition and decision-making. For research purposes only.*
