@@ -10,11 +10,6 @@ This repository contains a Python implementation of a football-adapted Wisconsin
 - Automated error classification (perseverative/non-perseverative)
 - Comprehensive data output in CSV format
 
-## Prerequisites
-```python
-pip install psychopy
-```
-
 ## Directory Structure
 ```
 football-wcst/
@@ -35,11 +30,6 @@ Scenarios follow a strict naming convention:
 - Role-specific: `[a/m/d][1-5]*.png`
 - Macro scenarios: `m[1-5]*.png`
 - Response options: `*_s.png` (selfish), `*_t.png` (team), `*_h.png` (hold)
-
-## Running the Experiment
-```python
-python main.py
-```
 
 ## Data Output Format
 The experiment generates CSV files with the following columns:
