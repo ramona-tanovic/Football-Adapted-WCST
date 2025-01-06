@@ -1,0 +1,263 @@
+---
+title: "Football-Adapted WCST Analysis"
+author: "Ramona Tanovic"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
+    highlight: tango
+    code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+
+# Load necessary libraries
+library(tidyverse)
+library(knitr)
+library(ggplot2)
+library(viridis)
+library(scales)
+library(gridExtra)
+```
+
+# Introduction
+
+This analysis tests two hypotheses regarding the Football-Adapted Wisconsin Card Sorting Test:
+
+1. Role-specific learning patterns hypothesis: Midfielders will demonstrate faster adaptation to rule changes
+2. Macro-scenario error distribution hypothesis: Defenders will show different error patterns in macro scenarios
+
+# Data Import and Preprocessing
+```{r data_preprocessing}
+# Load data from all CSV files in the results directory
+file_list <- list.files(path = "C:/Users/ramon/OneDrive/Desktop/Football_Adapted-WCST/script/results", 
+                        pattern = "*.csv", 
+                        full.names = TRUE)
+
+# Read and combine all CSV files
+data_list <- lapply(file_list, read_csv)
+wcst_data <- bind_rows(data_list)
+
+# Clean and prepare the data
+wcst_data <- wcst_data %>%
+  # Convert categorical variables to factors
+  mutate(
+    Participant = as.factor(Participant),
+    Gender = as.factor(Gender),
+    Role = as.factor(Role),
+    Correct_Rule = as.factor(Correct_Rule),
+    Selected_Rule = as.factor(Selected_Rule)
+  ) %>%
+  # Create a trial block variable for analysis
+  mutate(
+    Trial_Block = ceiling(Trial/10),
+    # Calculate if response matches previous rule (for perseveration analysis)
+    Previous_Rule = lag(Selected_Rule),
+    Is_Perseverating = Selected_Rule == Previous_Rule
+  )
+
+# Display data structure
+glimpse(wcst_data)
+```
+
+# Participant Demographics
+```{r demographics}
+# Create comprehensive demographic summary
+demographics <- wcst_data %>%
+  group_by(Role) %>%
+  summarise(
+    n_participants = n_distinct(Participant),
+    mean_age = mean(Age),
+    sd_age = sd(Age),
+    mean_experience = mean(`Experience [years]`),
+    sd_experience = sd(`Experience [years]`),
+    gender_distribution = list(table(Gender))
+  )
+
+# Create visualization of participant characteristics
+p1 <- ggplot(wcst_data %>% distinct(Participant, .keep_all = TRUE),
+       aes(x = Role, y = Age, fill = Role)) +
+  geom_violin(alpha = 0.7) +
+  geom_boxplot(width = 0.2, alpha = 0.8) +
+  scale_fill_viridis_d() +
+  labs(title = "Age Distribution by Role",
+       y = "Age (years)") +
+  theme_minimal()
+
+p2 <- ggplot(wcst_data %>% distinct(Participant, .keep_all = TRUE),
+       aes(x = Role, y = `Experience [years]`, fill = Role)) +
+  geom_violin(alpha = 0.7) +
+  geom_boxplot(width = 0.2, alpha = 0.8) +
+  scale_fill_viridis_d() +
+  labs(title = "Experience Distribution by Role",
+       y = "Experience (years)") +
+  theme_minimal()
+
+p1
+p2
+```
+
+# Hypothesis 1: Role-Specific Learning Patterns
+```{r learning_patterns}
+# Calculate learning curves (rolling success rate)
+learning_curves <- wcst_data %>%
+  group_by(Participant, Role) %>%
+  mutate(
+    # Calculate 10-trial moving average of correct responses
+    Rolling_Success = zoo::rollmean(as.numeric(Correct), 
+                                  k = 10, 
+                                  fill = NA, 
+                                  align = "right")
+  ) %>%
+  # Calculate mean success rate by trial for each role
+  group_by(Role, Trial) %>%
+  summarise(
+    Mean_Success = mean(Rolling_Success, na.rm = TRUE),
+    SE_Success = sd(Rolling_Success, na.rm = TRUE) / sqrt(n())
+  )
+
+# Visualize learning curves
+ggplot(learning_curves, aes(x = Trial, y = Mean_Success, color = Role)) +
+  geom_line(size = 1) +
+  geom_ribbon(aes(ymin = Mean_Success - SE_Success, 
+                  ymax = Mean_Success + SE_Success,
+                  fill = Role), 
+              alpha = 0.2) +
+  scale_color_viridis_d() +
+  scale_fill_viridis_d() +
+  labs(title = "Learning Curves by Player Role",
+       subtitle = "10-trial moving average with standard error",
+       x = "Trial Number",
+       y = "Success Rate") +
+  theme_minimal()
+
+# Calculate trials to criterion (8/10 correct)
+trials_to_criterion <- wcst_data %>%
+  group_by(Participant, Role) %>%
+  mutate(
+    Success_Window = zoo::rollsum(as.numeric(Correct), 
+                                k = 10, 
+                                fill = NA, 
+                                align = "right"),
+    Criterion_Met = Success_Window >= 8
+  ) %>%
+  summarise(
+    Trials_to_Criterion = which(Criterion_Met)[1],
+    Did_Reach_Criterion = any(Criterion_Met, na.rm = TRUE)
+  )
+
+# Test for role differences in learning speed
+criterion_model <- aov(Trials_to_Criterion ~ Role, data = trials_to_criterion)
+summary(criterion_model)
+```
+
+# Hypothesis 2: Error Pattern Analysis
+```{r error_patterns}
+# Calculate error rates and types by role
+error_analysis <- wcst_data %>%
+  group_by(Role, Participant) %>%
+  summarise(
+    Total_Trials = n(),
+    Perseverative_Rate = sum(Perseverative_Error) / Total_Trials,
+    NonPerseverative_Rate = sum(Non_Perseverative_Error) / Total_Trials,
+    Total_Error_Rate = (sum(Perseverative_Error) + 
+                       sum(Non_Perseverative_Error)) / Total_Trials
+  )
+
+# Add Experience [years] to error_analysis
+error_analysis <- error_analysis %>%
+  left_join(wcst_data %>% distinct(Participant, `Experience [years]`), 
+            by = "Participant")
+
+# Create visualization of error patterns
+error_patterns_long <- error_analysis %>%
+  pivot_longer(
+    cols = c(Perseverative_Rate, NonPerseverative_Rate),
+    names_to = "Error_Type",
+    values_to = "Rate"
+  )
+
+ggplot(error_patterns_long, 
+       aes(x = Role, y = Rate, fill = Error_Type)) +
+  geom_boxplot(alpha = 0.7) +
+  geom_point(position = position_jitterdodge(), alpha = 0.4) +
+  scale_fill_viridis_d() +
+  labs(title = "Distribution of Error Types by Role",
+       y = "Error Rate",
+       fill = "Error Type") +
+  theme_minimal()
+
+# Analyze perseveration patterns over time
+perseveration_progression <- wcst_data %>%
+  group_by(Role, Trial_Block) %>%
+  summarise(
+    Perseveration_Rate = mean(Perseverative_Error),
+    SE = sd(Perseverative_Error) / sqrt(n())
+  )
+
+ggplot(perseveration_progression, 
+       aes(x = Trial_Block, y = Perseveration_Rate, color = Role)) +
+  geom_line(size = 1) +
+  geom_ribbon(aes(ymin = Perseveration_Rate - SE, 
+                  ymax = Perseveration_Rate + SE,
+                  fill = Role), 
+              alpha = 0.2) +
+  scale_color_viridis_d() +
+  scale_fill_viridis_d() +
+  labs(title = "Perseveration Patterns Over Time",
+       x = "Trial Block",
+       y = "Perseveration Rate") +
+  theme_minimal()
+
+# Analyze relationship between experience and perseveration
+ggplot(error_analysis, 
+       aes(x = `Experience [years]`, y = Perseverative_Rate, color = Role)) +
+  geom_point(alpha = 0.7) +
+  geom_smooth(method = "lm", se = TRUE) +
+  scale_color_viridis_d() +
+  labs(title = "Relationship between Experience and Perseveration",
+       x = "Years of Experience",
+       y = "Perseverative Error Rate") +
+  theme_minimal()
+```
+
+# Advanced Analysis: Rule Switching Patterns
+```{r rule_switching}
+# Analyze rule switching behavior
+rule_switches <- wcst_data %>%
+  group_by(Participant, Role) %>%
+  mutate(
+    Rule_Switch = Selected_Rule != lag(Selected_Rule),
+    Post_Error_Trial = lag(Correct) == FALSE
+  ) %>%
+  summarise(
+    Switch_Rate = mean(Rule_Switch, na.rm = TRUE),
+    Post_Error_Switch_Rate = mean(Rule_Switch[Post_Error_Trial], na.rm = TRUE)
+  )
+
+# Visualize rule switching patterns
+ggplot(rule_switches, 
+       aes(x = Role, y = Post_Error_Switch_Rate, fill = Role)) +
+  geom_violin(alpha = 0.7) +
+  geom_boxplot(width = 0.2, alpha = 0.8) +
+  scale_fill_viridis_d() +
+  labs(title = "Rule Switching Behavior After Errors",
+       y = "Post-Error Switch Rate") +
+  theme_minimal()
+```
+
+
+# Hypothesis 1: Role-Specific Learning Patterns
+
+```{r}
+
+```
+
+# Hypothesis 2: Macro-Scenario Error Distribution
+```{r}
+
+```
+
