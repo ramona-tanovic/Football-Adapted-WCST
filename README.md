@@ -22,6 +22,8 @@ football-wcst/
 │   ├── defender/         # Defender-specific scenarios
 │   └── macro/           # Macro tactical scenarios
 │
+├── analysis.rmd           # R Markdown analysis
+│
 └── results/              # Output directory for CSV files
 ```
 
