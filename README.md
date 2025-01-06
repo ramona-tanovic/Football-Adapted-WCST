@@ -14,7 +14,7 @@ This repository contains a Python implementation of a football-adapted Wisconsin
 ```
 football-wcst/
 │
-├── main.py                 # Main experiment script
+├── football-wcst.py                 # Main experiment script
 │
 ├── scenarios/             # Stimulus images
 │   ├── attacker/         # Attacker-specific scenarios
